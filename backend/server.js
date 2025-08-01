@@ -24,5 +24,5 @@ app.get('/', (req, res) => {
 
 // === Lancement du serveur ===
 app.listen(port, () => {
-  console.log(`🚀 Serveur lancé sur http://localhost:${port}`);
+  console.log(`Serveur lancé sur http://localhost:${port}`);
 });
