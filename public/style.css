@@ -310,6 +310,7 @@
    .note-actions {
        display: flex;
        gap: 15px;
+       margin-right: 500px;
    }
 
    .action-btn {

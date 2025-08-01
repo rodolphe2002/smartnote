@@ -99,6 +99,8 @@ router.post("/assist", async (req, res) => {
     }
 
     const data = await response.json();
+    // console.log("Réponse brute IA :", JSON.stringify(data, null, 2));
+
     const rewritten = data.choices?.[0]?.message?.content?.trim();
 
     if (!rewritten) {
