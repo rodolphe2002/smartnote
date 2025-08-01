@@ -1,0 +1,291 @@
+html
+
+
+
+
+<!DOCTYPE html>
+<html lang="fr">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SmartNote - Éditeur intelligent</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Exo+2:wght@400;500;600;700&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="./style.css">
+</head>
+
+<body>
+    <!-- Header -->
+    <header>
+        <button class="menu-toggle action-btn">
+            <i class="fas fa-bars"></i>
+        </button>
+        <div class="search-container">
+            <i class="fas fa-search search-icon"></i>
+            <input type="text" class="search-bar" placeholder="Rechercher des notes...">
+        </div>
+        <div class="header-actions">
+            <button class="new-note-btn">
+                <i class="fas fa-plus"></i> Nouveau
+            </button>
+            <!-- <div class="user-profile">
+                <div class="user-avatar">JD</div>
+                <span>Jean Dupont</span>
+            </div> -->
+        </div>
+    </header>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="logo-container">
+            <div class="logo">S</div>
+            <div class="logo-text">SmartNote</div>
+        </div>
+
+        <div class="sidebar-nav">
+            <div class="nav-item" id="mes-notes">
+                <i class="fas fa-sticky-note"></i>
+                <span class="nav-label">Mes Notes</span>
+                <span class="nav-count" id="mes-notes-count">0</span>
+            </div>
+            <div class="nav-subitems" id="mes-notes-subitems"></div>
+
+
+
+            <div class="nav-item">
+                <i class="fas fa-folder"></i>
+                <span class="nav-label">Dossiers</span>
+
+
+
+
+
+
+
+
+            </div>
+
+            <div class="folders-section">
+                <div class="section-title">Dossiers</div>
+                <div class="sidebar-nav">
+                    <div class="nav-item">
+                        <i class="fas fa-briefcase"></i>
+                        <span class="nav-label">Travail</span>
+                        <span class="nav-count">12</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-graduation-cap"></i>
+                        <span class="nav-label">Études</span>
+                        <span class="nav-count">7</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-lightbulb"></i>
+                        <span class="nav-label">Idées</span>
+                    </div>
+                    <div class="nav-item">
+                        <i class="fas fa-shopping-cart"></i>
+                        <span class="nav-label">Courses</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <div class="nav-item" id="favoris-folder">
+                <i class="fas fa-star"></i>
+                <span class="nav-label">Favoris</span>
+                <span class="nav-count" id="favoris-count">0</span>
+            </div>
+            <div class="nav-subitems" id="favoris-subitems"></div>
+
+
+            <div class="nav-item" id="archives-folder">
+                <i class="fas fa-archive"></i>
+                <span class="nav-label">Archives</span>
+                <span class="nav-count" id="archives-count">0</span>
+            </div>
+            <div class="nav-subitems" id="archives-subitems"></div>
+
+
+
+            <div class="sidebar-nav" style="margin-top: auto;">
+                <!-- <div class="nav-item">
+                    <i class="fas fa-cog"></i>
+                    <span class="nav-label">Paramètres</span>
+                </div> -->
+                <div class="nav-item" id="theme-toggle">
+                    <i class="fas fa-moon"></i>
+                    <span class="nav-label">Mode sombre</span>
+                </div>
+            </div>
+    </aside>
+
+    <!-- Main Content -->
+    <main>
+        <div class="note-header">
+            <input type="text" class="note-title" value="Stratégie marketing pour jeunes adultes">
+            <div class="note-actions">
+                <button class="action-btn" id="toggle-summary">
+                    <i class="fas fa-brain"></i> 
+                </button>
+                <!-- <button class="action-btn">
+                    <i class="fas fa-share-alt"></i>
+                </button> -->
+               <button class="action-btn" id="global-options-btn">
+  <i class="fas fa-ellipsis-h"></i>
+</button>
+
+<div class="global-options-menu options-menu hidden">
+  <div class="option" data-action="deplacer">Déplacer</div>
+  <div class="option" data-action="favoris">Favoris</div>
+  <div class="option" data-action="archiver">Archiver</div>
+  <div class="option" data-action="supprimer">Supprimer</div>
+</div>
+
+            </div>
+        </div>
+
+        <div class="editor-container">
+            <div class="editor-toolbar">
+                <button class="toolbar-btn" id="btn-title">
+                    <i class="fas fa-heading"></i> Titre
+                </button>
+                <button class="toolbar-btn" id="btn-bold">
+                    <i class="fas fa-bold"></i>
+                </button>
+                <button class="toolbar-btn" id="btn-italic">
+                    <i class="fas fa-italic"></i>
+                </button>
+                <button class="toolbar-btn" id="btn-underline">
+                    <i class="fas fa-underline"></i>
+                </button>
+                <button class="toolbar-btn" id="btn-list">
+                    <i class="fas fa-list-ul"></i>
+                </button>
+                <button class="toolbar-btn" id="btn-ai">
+                    <i class="fas fa-magic"></i> IA
+                </button>
+
+                <!-- ✅ Correction en live -->
+                <button class="toolbar-btn" id="btn-translate">
+                    <i class="fas fa-pen"></i> Correction en live
+                </button>
+
+
+                <!-- ✅ Correction complète -->
+                <button class="toolbar-btn" id="btn-full-correct">
+                    <i class="fas fa-spell-check"></i> Corriger tout
+                </button>
+            </div>
+
+            <div class="editor-content" contenteditable="true">
+                <p><!-- contenu dynamique --></p>
+
+                <p><!-- contenu dynamique --></p>
+
+                <ul>
+                    <li><!-- contenu dynamique --></li>
+                    <li><!-- contenu dynamique --></li>
+                    <li><!-- contenu dynamique --></li>
+                    <li><!-- contenu dynamique --></li>
+                </ul>
+
+                <p></p>
+            </div>
+
+            <!-- AI Bubble -->
+            <div class="ai-bubble">
+                <div class="ai-header">
+                    <div class="ai-icon">
+                        <i class="fas fa-brain"></i>
+                    </div>
+                    <div class="ai-title">SmartNote AI</div>
+                </div>
+                <div class="ai-message">
+                    J'ai amélioré votre texte pour plus de clarté et de concision. Voulez-vous un ton plus professionnel
+                    pour ce document ?
+                </div>
+                <div class="ai-suggestions">
+                    <button class="ai-suggestion">Appliquer les changements</button>
+                    <button class="ai-suggestion">Ton professionnel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Summary Panel -->
+        <div class="summary-panel">
+            <div class="summary-header">
+                <div class="summary-title">Résumé intelligent</div>
+                <button class="action-btn close-summary">
+                    <i class="fas fa-times"></i>
+                </button>
+            </div>
+            <div class="summary-content">
+                <div class="summary-text">
+                  <!-- contenu dynamique -->
+                </div>
+                <div class="tags-container">
+                    <div class="tag"><!-- contenu dynamique --></div>
+                    <div class="tag"><!-- contenu dynamique --></div>
+                    <div class="tag"><!-- contenu dynamique --></div>
+                    <div class="tag"><!-- contenu dynamique --></div>
+                    <div class="tag"><!-- contenu dynamique --></div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer>
+        <div class="footer-left">
+            <div class="ai-status">
+                <div class="status-dot"></div>
+                <span>IA active</span>
+            </div>
+            <span>SmartNote AI v1.2.4</span>
+        </div>
+        <div class="footer-actions">
+            <a href="#" class="footer-link">Feedback</a>
+            <a href="#" class="footer-link">Aide</a>
+            <a href="#" class="footer-link">Confidentialité</a>
+        </div>
+    </footer>
+
+
+    <!-- modal option -->
+
+  <!-- modal option -->
+<div id="move-modal" class="modal hidden">
+  <div class="modal-content">
+    <h3>Déplacer la note dans :</h3>
+    <select id="folder-select" class="select-modern">
+      <option value="Travail">Travail</option>
+      <option value="Études">Études</option>
+      <option value="Idées">Idées</option>
+      <option value="Courses">Courses</option>
+    </select>
+    <div class="modal-actions">
+      <button id="confirm-move" class="btn btn-primary">Déplacer</button>
+      <button id="cancel-move" class="btn btn-secondary">Annuler</button>
+    </div>
+  </div>
+</div>
+
+
+
+
+
+
+
+    <!-- <script type="module" src="main.js"></script> -->
+    <script src="./script.js"></script>
+
+    <script src="./js/notes.js"></script>
+    <script src="./js/ai.js"></script>
+
+
+</body>
+
+</html>
