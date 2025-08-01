@@ -3,7 +3,7 @@
  // Exemple automatique pour BASE_URL
 const base_URL = window.location.hostname === "localhost"
   ? "http://localhost:5000"
-  : "https://ecefa-form.onrender.com";
+  : "https://smartnote-qsup.onrender.com";
 
  
  
