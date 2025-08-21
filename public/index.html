@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="fr">
 
@@ -6,6 +5,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>SmartNote - Éditeur intelligent</title>
+    <meta name="theme-color" content="#7c3aed">
+    <link rel="manifest" href="/manifest.webmanifest">
     <link
         href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Exo+2:wght@400;500;600;700&display=swap"
         rel="stylesheet">
@@ -26,6 +27,9 @@
         <div class="header-actions">
             <button class="new-note-btn">
                 <i class="fas fa-plus"></i> Nouveau
+            </button>
+            <button class="new-note-btn" id="install-app-btn" style="display:none;">
+                <i class="fas fa-download"></i> Installer
             </button>
             <!-- <div class="user-profile">
                 <div class="user-avatar">JD</div>

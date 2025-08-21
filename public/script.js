@@ -150,4 +150,47 @@ document.addEventListener('DOMContentLoaded', () => {
         button.addEventListener('mouseup', resetTransform);
         button.addEventListener('mouseleave', resetTransform);
     });
+
+    // === PWA: Service Worker + Install Flow ===
+    // Register service worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/service-worker.js').then(() => {
+            // SW registered
+        }).catch((err) => {
+            console.warn('Service Worker registration failed:', err);
+        });
+    }
+
+    // Handle install prompt
+    let deferredPrompt = null;
+    const installBtn = document.getElementById('install-app-btn');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        // Prevent the mini-infobar on mobile
+        e.preventDefault();
+        deferredPrompt = e;
+        if (installBtn) installBtn.style.display = 'inline-flex';
+        window.showToast && window.showToast('Vous pouvez installer SmartNote.', 'info');
+    });
+
+    installBtn?.addEventListener('click', async () => {
+        if (!deferredPrompt) {
+            window.showToast && window.showToast("Installation non disponible pour le moment.", 'info');
+            return;
+        }
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+            window.showToast && window.showToast('Installation en cours...', 'success');
+        } else {
+            window.showToast && window.showToast("Installation annulée.", 'info');
+        }
+        deferredPrompt = null;
+        if (installBtn) installBtn.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => {
+        window.showToast && window.showToast('SmartNote installé !', 'success');
+        if (installBtn) installBtn.style.display = 'none';
+    });
 });
