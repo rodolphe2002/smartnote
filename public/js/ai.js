@@ -1,9 +1,7 @@
 
 
- // Exemple automatique pour BASE_URL
-const base_URL = window.location.hostname === "localhost"
-  ? "http://localhost:5000"
-  : "https://smartnote-qsup.onrender.com";
+ // Base URL alignée sur l'origine courante (évite les incohérences de port)
+const base_URL = window.location.origin;
 
  
  
@@ -12,12 +10,14 @@ const base_URL = window.location.hostname === "localhost"
   const editor = document.querySelector('.editor-content');
 
   const translateBtn = document.getElementById('btn-translate');
-let correctionLiveActive = false;
+  let correctionLiveActive = false;
 
-translateBtn.addEventListener('click', () => {
-  correctionLiveActive = !correctionLiveActive;
-  translateBtn.classList.toggle('active', correctionLiveActive);
-});
+  if (translateBtn) {
+    translateBtn.addEventListener('click', () => {
+      correctionLiveActive = !correctionLiveActive;
+      translateBtn.classList.toggle('active', correctionLiveActive);
+    });
+  }
 
   
   // ... ton code ici ...
@@ -30,27 +30,25 @@ translateBtn.addEventListener('click', () => {
     editor.focus(); // Remet le focus dans l'éditeur après clic
   }
 
+  // Déclenche la sauvegarde via le listener 'input' défini dans notes.js
+  function saveEditor() {
+    if (!editor) return;
+    const evt = new Event('input', { bubbles: true });
+    editor.dispatchEvent(evt);
+  }
+
   // Boutons de la toolbar
-  document.getElementById('btn-bold').addEventListener('click', () => {
-    applyCommand('bold');
-  });
+  const btnBold = document.getElementById('btn-bold');
+  const btnItalic = document.getElementById('btn-italic');
+  const btnUnderline = document.getElementById('btn-underline');
+  const btnList = document.getElementById('btn-list');
+  const btnTitle = document.getElementById('btn-title');
 
-  document.getElementById('btn-italic').addEventListener('click', () => {
-    applyCommand('italic');
-  });
-
-  document.getElementById('btn-underline').addEventListener('click', () => {
-    applyCommand('underline');
-  });
-
-  document.getElementById('btn-list').addEventListener('click', () => {
-    applyCommand('insertUnorderedList');
-  });
-
-  document.getElementById('btn-title').addEventListener('click', () => {
-    // On applique un titre h2 (équivalent "Titre")
-    applyCommand('formatBlock', 'h2');
-  });
+  if (btnBold) btnBold.addEventListener('click', () => applyCommand('bold'));
+  if (btnItalic) btnItalic.addEventListener('click', () => applyCommand('italic'));
+  if (btnUnderline) btnUnderline.addEventListener('click', () => applyCommand('underline'));
+  if (btnList) btnList.addEventListener('click', () => applyCommand('insertUnorderedList'));
+  if (btnTitle) btnTitle.addEventListener('click', () => applyCommand('formatBlock', 'h2'));
 
   // (btn-ai reste inactif pour l’instant)
 
@@ -74,19 +72,31 @@ editor.addEventListener("keydown", async (e) => {
   // On déclenche la correction seulement à l’appui de Entrée
   if (e.key === "Enter") {
     setTimeout(async () => {
-      const paragraphs = Array.from(editor.childNodes).filter(
-        node => node.nodeType === Node.ELEMENT_NODE || (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "")
-      );
+      // Normaliser les noeuds texte directs en blocs pour un ciblage fiable
+      const directTextNodes = Array.from(editor.childNodes).filter(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim() !== "");
+      for (const t of directTextNodes) {
+        const wrap = document.createElement('div');
+        wrap.innerText = t.textContent;
+        editor.replaceChild(wrap, t);
+      }
 
-      // Trouver le paragraphe précédent (celui "validé")
-      const currentParagraphIndex = paragraphs.findIndex(p => document.activeElement === editor && editor.contains(p) && window.getSelection().anchorNode?.parentNode === p);
-      const targetIndex = currentParagraphIndex > 0 ? currentParagraphIndex - 1 : paragraphs.length - 2;
+      // Récupérer tous les blocs textuels pertinents
+      const blocks = Array.from(editor.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre'))
+        .filter(el => el.innerText && el.innerText.trim() !== '');
 
-      if (targetIndex < 0 || !paragraphs[targetIndex]) return;
+      if (blocks.length === 0) return;
 
-      const target = paragraphs[targetIndex];
+      // Cibler le bloc précédent si le dernier est vide après entrée, sinon le dernier non vide
+      let target = null;
+      const last = blocks[blocks.length - 1];
+      if (blocks.length >= 2 && last.innerText.trim() === '') {
+        target = blocks[blocks.length - 2];
+      } else {
+        target = last;
+      }
+
+      if (!target) return;
       const originalText = target.innerText.trim();
-
       if (!originalText || lastCorrected.get(target) === originalText) return;
 
       try {
@@ -102,6 +112,7 @@ editor.addEventListener("keydown", async (e) => {
         if (corrected && corrected !== originalText) {
           target.innerText = corrected;
           lastCorrected.set(target, corrected);
+          saveEditor();
         }
 
       } catch (err) {
@@ -120,16 +131,24 @@ editor.addEventListener("input", () => {
   clearTimeout(debounceTimer);
 
   debounceTimer = setTimeout(async () => {
-    const paragraphs = Array.from(editor.childNodes).filter(
-      node => node.nodeType === Node.ELEMENT_NODE || (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "")
-    );
+    // Normaliser les noeuds texte directs
+    const directTextNodes = Array.from(editor.childNodes).filter(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim() !== "");
+    for (const t of directTextNodes) {
+      const wrap = document.createElement('div');
+      wrap.innerText = t.textContent;
+      editor.replaceChild(wrap, t);
+    }
 
-    if (paragraphs.length === 0) return;
+    // Récupérer les blocs textuels pertinents
+    const blocks = Array.from(editor.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre'))
+      .filter(el => el.innerText && el.innerText.trim() !== '');
 
-    const lastParagraph = paragraphs[paragraphs.length - 1];
-    const originalText = lastParagraph.innerText?.trim();
+    if (blocks.length === 0) return;
 
-    if (!originalText || lastCorrected.get(lastParagraph) === originalText) return;
+    const lastBlock = blocks[blocks.length - 1];
+    const originalText = lastBlock.innerText?.trim();
+
+    if (!originalText || lastCorrected.get(lastBlock) === originalText) return;
 
     try {
       const response = await fetch(`${base_URL}/api/assist`, {
@@ -142,11 +161,12 @@ editor.addEventListener("input", () => {
       const corrected = data?.result?.trim();
 
       if (corrected && corrected !== originalText) {
-        lastParagraph.innerText = corrected;
-        lastCorrected.set(lastParagraph, corrected);
+        lastBlock.innerText = corrected;
+        lastCorrected.set(lastBlock, corrected);
 
-        lastParagraph.classList.add("highlight-corrected");
-        setTimeout(() => lastParagraph.classList.remove("highlight-corrected"), 2000);
+        lastBlock.classList.add("highlight-corrected");
+        setTimeout(() => lastBlock.classList.remove("highlight-corrected"), 2000);
+        saveEditor();
       }
     } catch (err) {
       console.error("Erreur IA après pause saisie :", err);
@@ -155,50 +175,51 @@ editor.addEventListener("input", () => {
 });
 
 
-// Fonction utilitaire pour remplacer la sélection par un contenu HTML
-function replaceSelectionWithHTML(html) {
+// Fonction utilitaire pour remplacer la sélection par du TEXTE (sécurisé)
+function replaceSelectionWithText(text) {
   const sel = window.getSelection();
-  if (!sel.rangeCount) return false;
+  if (!sel || !sel.rangeCount) return false;
 
   const range = sel.getRangeAt(0);
   range.deleteContents();
 
-  const el = document.createElement("div");
-  el.innerHTML = html;
-  const frag = document.createDocumentFragment();
-  let node, lastNode;
-  while ((node = el.firstChild)) {
-    lastNode = frag.appendChild(node);
-  }
-  range.insertNode(frag);
+  const textNode = document.createTextNode(text);
+  range.insertNode(textNode);
 
-  // Remet le curseur après la sélection remplacée
-  if (lastNode) {
-    range.setStartAfter(lastNode);
-    range.collapse(true);
-    sel.removeAllRanges();
-    sel.addRange(range);
-  }
+  // Remet le curseur après le texte inséré
+  range.setStartAfter(textNode);
+  range.collapse(true);
+  sel.removeAllRanges();
+  sel.addRange(range);
 }
 
 // Gestion du clic sur btn-ai pour corriger la sélection
-document.getElementById("btn-ai").addEventListener("click", async () => {
+const btnAi = document.getElementById("btn-ai");
+btnAi && btnAi.addEventListener("click", async () => {
   const sel = window.getSelection();
 
   if (!sel || sel.isCollapsed || !editor.contains(sel.anchorNode)) {
-    alert("Veuillez sélectionner du texte dans l'éditeur pour utiliser l'IA.");
+    if (window.showToast) {
+      window.showToast("Veuillez sélectionner du texte dans l'éditeur pour utiliser l'IA.", "info");
+    } else {
+      alert("Veuillez sélectionner du texte dans l'éditeur pour utiliser l'IA.");
+    }
     return;
   }
 
   const selectedText = sel.toString().trim();
   if (!selectedText) {
-    alert("La sélection est vide.");
+    if (window.showToast) {
+      window.showToast("La sélection est vide.", "info");
+    } else {
+      alert("La sélection est vide.");
+    }
     return;
   }
 
   try {
     // Afficher un indicateur de chargement (optionnel)
-    document.getElementById("btn-ai").disabled = true; 
+    btnAi.disabled = true; 
 
     const response = await fetch(`${base_URL}/api/assist`, {
       method: "POST",
@@ -210,8 +231,8 @@ document.getElementById("btn-ai").addEventListener("click", async () => {
     const corrected = data?.result?.trim();
 
     if (corrected && corrected !== selectedText) {
-      // Remplacer la sélection par le texte corrigé
-      replaceSelectionWithHTML(corrected);
+      // Remplacer la sélection par du texte corrigé (sécurisé)
+      replaceSelectionWithText(corrected);
 
       // Récupérer le noeud qui contient la correction pour animation
       // Ici on récupère le parent commun de la sélection courante (post remplacement)
@@ -220,6 +241,7 @@ document.getElementById("btn-ai").addEventListener("click", async () => {
       // Ajout classe animation et suppression après 2s
       parentNode.classList.add("highlight-corrected");
       setTimeout(() => parentNode.classList.remove("highlight-corrected"), 2000);
+      saveEditor();
     } else {
       alert("Le texte sélectionné est déjà correct ou aucune correction apportée.");
     }
@@ -227,7 +249,7 @@ document.getElementById("btn-ai").addEventListener("click", async () => {
     console.error("Erreur IA lors de la correction de la sélection :", error);
     alert("Erreur lors de la correction, veuillez réessayer.");
   } finally {
-    document.getElementById("btn-ai").disabled = false;
+    btnAi.disabled = false;
   }
 });
 
@@ -240,25 +262,37 @@ document.getElementById("btn-ai").addEventListener("click", async () => {
 let lastCorrectionBatch = []; // Nouveau : pour stocker temporairement les corrections
 
 document.getElementById("btn-full-correct").addEventListener("click", async () => {
-  const paragraphs = Array.from(editor.childNodes).filter(
-    node =>
-      node.nodeType === Node.ELEMENT_NODE ||
-      (node.nodeType === Node.TEXT_NODE && node.textContent.trim() !== "")
-  );
+  // 1) Normaliser: transformer les noeuds texte directs en <div> blocs
+  const directTextNodes = Array.from(editor.childNodes).filter(n => n.nodeType === Node.TEXT_NODE && n.textContent.trim() !== "");
+  for (const t of directTextNodes) {
+    const wrap = document.createElement('div');
+    wrap.innerText = t.textContent;
+    editor.replaceChild(wrap, t);
+  }
 
-  if (paragraphs.length === 0) {
-    alert("Aucun contenu à corriger.");
+  // 2) Récupérer tous les blocs textuels potentiels (y compris listes et titres)
+  const blocks = Array.from(editor.querySelectorAll('p, div, li, h1, h2, h3, h4, h5, h6, blockquote, pre'))
+    .filter(el => el.innerText && el.innerText.trim() !== '');
+
+  if (blocks.length === 0) {
+    if (window.showToast) {
+      window.showToast("Aucun contenu à corriger.", "info");
+    } else {
+      alert("Aucun contenu à corriger.");
+    }
     return;
   }
 
   const fullBtn = document.getElementById("btn-full-correct");
   fullBtn.classList.add("loading");
+  fullBtn.disabled = true;
 
   lastCorrectionBatch = []; // Réinitialiser
+  let changedCount = 0;
 
-  for (const p of paragraphs) {
-    const originalText = p.innerText.trim();
-    if (!originalText || lastCorrected.get(p) === originalText) continue;
+  for (const el of blocks) {
+    const originalText = el.innerText.trim();
+    if (!originalText || lastCorrected.get(el) === originalText) continue;
 
     try {
       const response = await fetch(`${base_URL}/api/assist`, {
@@ -271,13 +305,13 @@ document.getElementById("btn-full-correct").addEventListener("click", async () =
       const corrected = data?.result?.trim();
 
       if (corrected && corrected !== originalText) {
-        // Stocker l'élément et les deux versions
-        lastCorrectionBatch.push({ element: p, original: originalText, corrected });
-
-        p.innerText = corrected;
-        lastCorrected.set(p, corrected);
-        p.classList.add("highlight-corrected");
-        setTimeout(() => p.classList.remove("highlight-corrected"), 2000);
+        lastCorrectionBatch.push({ element: el, original: originalText, corrected });
+        el.innerText = corrected;
+        lastCorrected.set(el, corrected);
+        el.classList.add("highlight-corrected");
+        setTimeout(() => el.classList.remove("highlight-corrected"), 2000);
+        saveEditor();
+        changedCount++;
       }
     } catch (error) {
       console.error("Erreur IA correction complète :", error);
@@ -285,23 +319,29 @@ document.getElementById("btn-full-correct").addEventListener("click", async () =
   }
 
   fullBtn.classList.remove("loading");
+  fullBtn.disabled = false;
 
-  if (lastCorrectionBatch.length > 0) {
+  if (changedCount > 0) {
     document.querySelector(".ai-bubble").classList.add("visible");
+  } else if (window.showToast) {
+    window.showToast("Aucune correction nécessaire.", "info");
   }
 });
 
 
   //  Gérer le clic sur "Appliquer les changements
 
-document.querySelector('.ai-suggestion:nth-child(1)').addEventListener('click', () => {
-  document.querySelector('.ai-bubble').classList.remove("visible");
+const aiBubble = document.querySelector('.ai-bubble');
+const aiApplyBtn = document.querySelector('.ai-suggestion:nth-child(1)');
+aiApplyBtn && aiApplyBtn.addEventListener('click', () => {
+  aiBubble && aiBubble.classList.remove("visible");
   lastCorrectionBatch = []; // Nettoyer la mémoire
 });
 
 
 // Gérer le clic sur "Ton professionnel" (reformulation avec style professionnel)
-document.querySelector('.ai-suggestion:nth-child(2)').addEventListener('click', async () => {
+const aiProBtn = document.querySelector('.ai-suggestion:nth-child(2)');
+aiProBtn && aiProBtn.addEventListener('click', async () => {
   for (const { element, corrected } of lastCorrectionBatch) {
     try {
       const response = await fetch(`${base_URL}/api/assist`, {
@@ -318,13 +358,14 @@ document.querySelector('.ai-suggestion:nth-child(2)').addEventListener('click', 
         lastCorrected.set(element, proVersion);
         element.classList.add("highlight-corrected");
         setTimeout(() => element.classList.remove("highlight-corrected"), 2000);
+        saveEditor();
       }
     } catch (err) {
       console.error("Erreur reformulation professionnelle :", err);
     }
   }
 
-  document.querySelector('.ai-bubble').classList.remove("visible");
+  aiBubble && aiBubble.classList.remove("visible");
   lastCorrectionBatch = [];
 });
 
@@ -333,15 +374,24 @@ document.querySelector('.ai-suggestion:nth-child(2)').addEventListener('click', 
 
 
 
-document.getElementById("toggle-summary").addEventListener("click", async () => {
+const toggleSummaryBtn = document.getElementById("toggle-summary");
+toggleSummaryBtn && toggleSummaryBtn.addEventListener("click", async () => {
   const content = document.querySelector(".editor-content").innerText.trim();
 
   if (!content) {
-    alert("Aucune note à résumer.");
+    // Afficher un message dans le panneau de résumé au lieu d'une alerte
+    const panel = document.querySelector(".summary-panel");
+    const textEl = document.querySelector(".summary-text");
+    const tagContainer = document.querySelector(".tags-container");
+    if (panel && textEl && tagContainer) {
+      panel.classList.add("visible");
+      textEl.innerText = "Aucune note à résumer. Écrivez du contenu dans l'éditeur pour générer un résumé.";
+      tagContainer.innerHTML = "";
+    }
     return;
   }
 
-  const btn = document.getElementById("toggle-summary");
+  const btn = toggleSummaryBtn;
   btn.classList.add("loading");
 
   try {

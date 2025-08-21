@@ -19,6 +19,13 @@
        --transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
    }
 
+  /* Force hide hamburger on desktop explicitly */
+  @media (min-width: 769px) {
+      .menu-toggle {
+          display: none !important;
+      }
+  }
+
    .dark-mode {
        --bg-primary: #121826;
        --bg-secondary: #1F2937;
@@ -37,6 +44,12 @@
        margin: 0;
        padding: 0;
        box-sizing: border-box;
+   }
+
+   /* Media fluid elements */
+   img, video, canvas, svg {
+       max-width: 100%;
+       height: auto;
    }
 
    body {
@@ -105,6 +118,13 @@
        align-items: center;
        gap: 20px;
    }
+
+   /* Masquer le menu hamburger sur ordinateur (visible seulement en mobile via le media query) */
+  .menu-toggle,
+  header .menu-toggle,
+  header .menu-toggle.action-btn {
+      display: none !important; /* priorité face à .action-btn et autres styles */
+  }
 
    .new-note-btn {
        background: var(--bg-accent);
@@ -310,7 +330,10 @@
    .note-actions {
        display: flex;
        gap: 15px;
-       margin-right: 500px;
+       margin-right: 0;
+       position: relative; /* anchor for .options-menu absolute positioning */
+       flex-wrap: wrap;
+       z-index: 500; /* above summary-panel (400) so nested menu is visible */
    }
 
    .action-btn {
@@ -482,19 +505,19 @@
 
    /* Summary Panel */
    .summary-panel {
-       position: absolute;
-       right: -350px;
-       top: 0;
-       width: 320px;
-       height: 100%;
-       background: var(--bg-secondary);
-       box-shadow: var(--shadow-lg);
-       padding: 25px;
-       z-index: 50;
-       transition: var(--transition);
-       overflow-y: auto;
-       border-left: 1px solid var(--border);
-   }
+      position: absolute;
+      right: -350px;
+      top: 0;
+      width: 320px;
+      height: 100%;
+      background: var(--bg-secondary);
+      box-shadow: var(--shadow-lg);
+      padding: 25px;
+      z-index: 400; /* au-dessus de .note-actions (60) et .ai-bubble (100) */
+      transition: var(--transition);
+      overflow-y: auto;
+      border-left: 1px solid var(--border);
+  }
 
    .summary-panel.visible {
        right: 0;
@@ -622,11 +645,62 @@
    }
 
    
+/* Toast notifications (global) */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  pointer-events: none; /* clicks pass through */
+}
+
+.toast {
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  padding: 12px 16px;
+  border-radius: 10px;
+  min-width: 240px;
+  max-width: 90vw;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  transform: translateY(10px);
+  animation: toastIn 0.25s ease forwards;
+}
+
+.toast.success { border-left: 4px solid var(--success); }
+.toast.error { border-left: 4px solid var(--error); }
+.toast.info { border-left: 4px solid var(--bg-accent); }
+
+.toast i {
+  color: var(--text-secondary);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes toastOut {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(10px); }
+}
+
 
    /* Responsive */
    @media (max-width: 1100px) {
        body {
            grid-template-columns: 80px 1fr;
+       }
+       :root {
+           --sidebar-width: 220px;
        }
 /* 
        .nav-label,
@@ -649,6 +723,14 @@
 
    
 
+   @media (min-width: 768px) {
+       .menu-toggle,
+      header .menu-toggle,
+      header .menu-toggle.action-btn {
+          display: none !important;
+      }
+   }
+
    @media (max-width: 768px) {
        /* body {
                 grid-template-columns: 1fr;
@@ -667,7 +749,6 @@
                "main"
                "footer";
        }
-
 
        .sidebar {
            display: none;
@@ -700,16 +781,77 @@
                 left: 0;
             } */
 
-       .menu-toggle {
-           display: block;
-       }
+       .menu-toggle,
+      header .menu-toggle,
+      header .menu-toggle.action-btn {
+          display: block !important;
+      }
 
         .menu-toggle{
     z-index: 1000;
    }
 
        /* new */
+       header {
+           padding: 0 16px;
+       }
+
+       .header-actions {
+           gap: 12px;
+           flex-wrap: wrap;
+       }
+
+       .search-container {
+           max-width: 100%;
+           margin: 0 10px;
+       }
+
+       .note-title {
+           font-size: 22px;
+       }
+
+       .note-actions {
+           gap: 10px;
+       }
+
+       main {
+           padding: 16px;
+       }
+
+       .editor-content {
+           padding: 18px;
+           font-size: 16px;
+       }
+
+       .ai-bubble {
+           right: 16px;
+           bottom: 16px;
+           max-width: 90%;
+       }
+
+       .summary-panel {
+           width: 100%;
+           right: -100%;
+       }
+
+       footer {
+           padding: 0 16px;
+           font-size: 12px;
+       }
     }
+
+   /* Very small devices */
+   @media (max-width: 380px) {
+       :root {
+           --header-height: 56px;
+           --footer-height: 44px;
+       }
+       .search-bar { font-size: 14px; padding: 10px 16px 10px 40px; }
+       .note-title { font-size: 20px; }
+       .toolbar-btn { padding: 6px 10px; font-size: 13px; }
+       .action-btn { width: 36px; height: 36px; }
+       .editor-content { padding: 14px; font-size: 15px; }
+   }
 
 
 
@@ -760,20 +902,20 @@
    }
 
    .options-menu {
-       position: absolute;
-       top: 100%;
-       right: 0;
-       background: #fff;
-       border: 1px solid #ddd;
-       border-radius: 6px;
-       box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-       display: none;
-       flex-direction: column;
-       z-index: 10400;
-       /* supérieur à celui des .tabs */
-       min-width: 130px;
-       overflow: hidden;
-   }
+      position: absolute;
+      top: 100%;
+      right: 0;
+      z-index: 500;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      display: none;
+      flex-direction: column;
+      /* supérieur à celui des .tabs */
+      min-width: 130px;
+      overflow: hidden;
+  }
 
 
    .note-options {
@@ -785,13 +927,15 @@
 
 
    .options-menu .option {
-       padding: 8px 12px;
-       cursor: pointer;
-   }
+      padding: 8px 12px;
+      cursor: pointer;
+      color: var(--text-primary);
+  }
 
-   .options-menu .option:hover {
-       background-color: #f0f0f0;
-   }
+  .options-menu .option:hover {
+      background-color: rgba(124, 58, 237, 0.10);
+      /* conserve la lisibilité en dark/light */
+  }
 
    .options-menu.hidden {
        display: none;

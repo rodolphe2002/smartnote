@@ -16,6 +16,23 @@ let notes = JSON.parse(localStorage.getItem('notes')) || [];
 let noteIdCounter = notes.length ? Math.max(...notes.map(n => n.id)) + 1 : 1;
 let noteCount = notes.length;
 let currentNoteElement = null;
+let currentSearchQuery = '';
+
+// Utilitaires pour la recherche
+function normalize(str = '') {
+  return str
+    .toString()
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/\p{Diacritic}+/gu, '')
+    .trim();
+}
+
+function htmlToText(html = '') {
+  const div = document.createElement('div');
+  div.innerHTML = html;
+  return div.innerText || '';
+}
 
 function saveNotesToLocalStorage() {
   localStorage.setItem('notes', JSON.stringify(notes));
@@ -110,9 +127,6 @@ function createSidebarNote(title = `Nouvelle note ${noteCount}`, id = noteIdCoun
     optionsMenu.classList.toggle('visible');
   });
 
-  document.addEventListener('click', () => {
-    optionsMenu.classList.remove('visible');
-  });
 
   // Actions dans le menu options
  // Actions dans le menu options 
@@ -143,21 +157,7 @@ optionsMenu.querySelectorAll('.option').forEach(option => {
   });
 });
 
-// Gestion de la modale de déplacement
-confirmMoveBtn.addEventListener('click', () => {
-  if (noteToMove) {
-    noteToMove.folder = folderSelect.value;
-    saveNotesToLocalStorage();
-    renderAllNotes();
-  }
-  moveModal.classList.add('hidden');
-  noteToMove = null;
-});
 
-cancelMoveBtn.addEventListener('click', () => {
-  moveModal.classList.add('hidden');
-  noteToMove = null;
-});
 
 
   // Drag & Drop (optionnel)
@@ -188,6 +188,22 @@ cancelMoveBtn.addEventListener('click', () => {
 
   return noteItem;
 }
+
+// Gestion de la modale de déplacement (bind une seule fois au niveau global)
+confirmMoveBtn.addEventListener('click', () => {
+  if (noteToMove) {
+    noteToMove.folder = folderSelect.value;
+    saveNotesToLocalStorage();
+    renderAllNotes();
+  }
+  moveModal.classList.add('hidden');
+  noteToMove = null;
+});
+
+cancelMoveBtn.addEventListener('click', () => {
+  moveModal.classList.add('hidden');
+  noteToMove = null;
+});
 
 function createNewNoteFromUI() {
   noteCount++;
@@ -243,12 +259,25 @@ function renderAllNotes() {
 
   // Notes sans dossier affichées dans "Mes Notes"
   const mesNotesContainer = document.getElementById('mes-notes-subitems');
-  const mesNotes = notes.filter(n => !n.folder);
+  const q = normalize(currentSearchQuery);
+  const mesNotes = notes.filter(n => !n.folder).filter(n => {
+    if (!q) return true;
+    const inTitle = normalize(n.title).includes(q);
+    const inContent = normalize(htmlToText(n.content || '')).includes(q);
+    return inTitle || inContent;
+  });
   mesNotes.forEach(note => {
     const noteElem = createSidebarNote(note.title, note.id);
     mesNotesContainer.appendChild(noteElem);
   });
   updateFolderCount(null, mesNotes.length);
+
+  // Rendre "Mes Notes" droppable (pour enlever une note d'un dossier)
+  attachDropHandlers(null, [
+    mesNotesContainer,
+    // Item de navigation "Mes Notes" si présent
+    Array.from(document.querySelectorAll('.sidebar .nav-item')).find(el => el.querySelector('.nav-label')?.textContent?.trim() === 'Mes Notes')
+  ].filter(Boolean));
 
   // Liste des dossiers
   const folders = ['Travail', 'Études', 'Idées', 'Courses', 'Favoris', 'Archives'];
@@ -273,13 +302,51 @@ function renderAllNotes() {
     }
 
     // Notes dans ce dossier
-    const notesInFolder = notes.filter(n => n.folder === folderName);
+    const notesInFolder = notes.filter(n => n.folder === folderName).filter(n => {
+      if (!q) return true;
+      const inTitle = normalize(n.title).includes(q);
+      const inContent = normalize(htmlToText(n.content || '')).includes(q);
+      return inTitle || inContent;
+    });
     notesInFolder.forEach(note => {
       const noteElem = createSidebarNote(note.title, note.id);
       folderContainer.appendChild(noteElem);
     });
 
     updateFolderCount(folderName, notesInFolder.length);
+
+    // Activer le drop sur le conteneur et l'item de navigation du dossier
+    const folderNavItem = Array.from(document.querySelectorAll('.folders-section .nav-item'))
+      .find(el => el.querySelector('.nav-label')?.textContent?.trim() === folderName);
+    attachDropHandlers(folderName, [folderContainer, folderNavItem].filter(Boolean));
+  });
+}
+
+// Attache les handlers de dragover/drop à une liste de zones pour déplacer une note vers targetFolderName
+function attachDropHandlers(targetFolderName, zones) {
+  zones.forEach(zone => {
+    zone.addEventListener('dragover', (e) => {
+      e.preventDefault(); // Autorise le drop
+      zone.classList.add('drag-over');
+    });
+    zone.addEventListener('dragleave', () => {
+      zone.classList.remove('drag-over');
+    });
+    zone.addEventListener('drop', (e) => {
+      e.preventDefault();
+      zone.classList.remove('drag-over');
+      const idStr = e.dataTransfer.getData('text/plain');
+      const noteId = parseInt(idStr, 10);
+      if (!Number.isFinite(noteId)) return;
+      const note = notes.find(n => n.id === noteId);
+      if (!note) return;
+      // Éviter de re-render si pas de changement de dossier
+      const newFolder = targetFolderName || null;
+      if ((note.folder || null) === newFolder) return;
+      note.folder = newFolder;
+      saveNotesToLocalStorage();
+      renderAllNotes();
+    });
   });
 }
 
@@ -304,6 +371,28 @@ loadNotesFromStorage();
 
 
 
+// Recherche: écouteur input + touche Entrée
+const searchInput = document.querySelector('.search-bar');
+if (searchInput) {
+  const applySearch = () => {
+    currentSearchQuery = searchInput.value || '';
+    renderAllNotes();
+  };
+
+  let searchDebounce;
+  searchInput.addEventListener('input', () => {
+    clearTimeout(searchDebounce);
+    searchDebounce = setTimeout(applySearch, 150);
+  });
+
+  searchInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      applySearch();
+    }
+  });
+}
+
 const globalOptionsBtn = document.getElementById('global-options-btn');
 const globalOptionsMenu = document.querySelector('.global-options-menu');
 
@@ -312,21 +401,35 @@ globalOptionsBtn.addEventListener('click', (e) => {
 
   // Ferme les autres menus visibles
   document.querySelectorAll('.options-menu.visible').forEach(menu => {
-    if (menu !== globalOptionsMenu) menu.classList.remove('visible');
+    if (menu !== globalOptionsMenu) {
+      menu.classList.remove('visible');
+      menu.classList.add('hidden');
+    }
   });
 
   // Affiche ou cache le menu global
+  const willShow = !globalOptionsMenu.classList.contains('visible');
   globalOptionsMenu.classList.toggle('visible');
+  if (willShow) {
+    globalOptionsMenu.classList.remove('hidden');
+  } else {
+    globalOptionsMenu.classList.add('hidden');
+  }
 
-  // Positionner près du bouton (optionnel)
-  const rect = globalOptionsBtn.getBoundingClientRect();
-  globalOptionsMenu.style.position = 'absolute';
-  globalOptionsMenu.style.top = `${rect.bottom + window.scrollY}px`;
-  globalOptionsMenu.style.left = `${rect.left + window.scrollX}px`;
+  // Positionnement via CSS (top:100%; right:0) relatif à .note-actions
+  globalOptionsMenu.style.top = '';
+  globalOptionsMenu.style.left = '';
+  globalOptionsMenu.style.position = '';
 });
 
 document.addEventListener('click', () => {
   globalOptionsMenu.classList.remove('visible');
+  globalOptionsMenu.classList.add('hidden');
+  // Fermer aussi tous les menus d'options de notes ouverts
+  document.querySelectorAll('.options-menu.visible').forEach(menu => {
+    menu.classList.remove('visible');
+    menu.classList.add('hidden');
+  });
 });
 
 // Actions du menu global
