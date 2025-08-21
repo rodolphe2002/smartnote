@@ -328,13 +328,13 @@
    }
 
    .note-actions {
-       display: flex;
-       gap: 15px;
-       margin-right: 0;
-       position: relative; /* anchor for .options-menu absolute positioning */
-       flex-wrap: wrap;
-       z-index: 500; /* above summary-panel (400) so nested menu is visible */
-   }
+      display: flex;
+      gap: 15px;
+      margin-right: 0;
+      position: relative; /* anchor for .options-menu absolute positioning */
+      flex-wrap: wrap;
+      z-index: 60; /* below summary-panel (400) so close button stays above */
+  }
 
    .action-btn {
        width: 40px;
@@ -905,7 +905,7 @@
       position: absolute;
       top: 100%;
       right: 0;
-      z-index: 500;
+      z-index: 700; /* above summary-panel so the dropdown is visible */
       background: var(--bg-secondary);
       border: 1px solid var(--border);
       border-radius: 6px;
