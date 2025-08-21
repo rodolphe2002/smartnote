@@ -164,6 +164,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Handle install prompt
     let deferredPrompt = null;
     const installBtn = document.getElementById('install-app-btn');
+    const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
 
     window.addEventListener('beforeinstallprompt', (e) => {
         // Prevent the mini-infobar on mobile
@@ -174,6 +176,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     installBtn?.addEventListener('click', async () => {
+        // iOS: no beforeinstallprompt, show instructions
+        if (isIos && !isStandalone) {
+            window.showToast && window.showToast("Sur iPhone: appuyez sur le bouton Partager, puis 'Ajouter à l’écran d’accueil'.", 'info', 6000);
+            return;
+        }
         if (!deferredPrompt) {
             window.showToast && window.showToast("Installation non disponible pour le moment.", 'info');
             return;
@@ -193,4 +200,55 @@ document.addEventListener('DOMContentLoaded', () => {
         window.showToast && window.showToast('SmartNote installé !', 'success');
         if (installBtn) installBtn.style.display = 'none';
     });
+
+    // iOS: show the button proactively when not standalone
+    if (isIos && !isStandalone && installBtn) {
+        installBtn.style.display = 'inline-flex';
+    }
+
+    // iOS: generate and inject a 180x180 PNG apple-touch-icon from our SVG to keep the exact same icon
+    (async function ensureAppleTouchIcon() {
+        if (!isIos) return;
+        // If an apple-touch-icon already exists, keep it
+        const existing = document.querySelector('link[rel~="apple-touch-icon"]');
+        if (existing) return;
+        try {
+            const svgUrl = '/icons/icon-512.svg';
+            const res = await fetch(svgUrl, { credentials: 'same-origin' });
+            if (!res.ok) return;
+            const svgText = await res.text();
+            const blob = new Blob([svgText], { type: 'image/svg+xml' });
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+            img.onload = () => {
+                try {
+                    const size = 180;
+                    const canvas = document.createElement('canvas');
+                    canvas.width = size;
+                    canvas.height = size;
+                    const ctx = canvas.getContext('2d');
+                    ctx.clearRect(0, 0, size, size);
+                    // draw SVG scaled to fit
+                    const scale = Math.min(size / img.width, size / img.height);
+                    const dw = img.width * scale;
+                    const dh = img.height * scale;
+                    const dx = (size - dw) / 2;
+                    const dy = (size - dh) / 2;
+                    ctx.drawImage(img, dx, dy, dw, dh);
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const link = document.createElement('link');
+                    link.rel = 'apple-touch-icon';
+                    link.sizes = '180x180';
+                    link.href = dataUrl;
+                    document.head.appendChild(link);
+                } finally {
+                    URL.revokeObjectURL(url);
+                }
+            };
+            img.onerror = () => URL.revokeObjectURL(url);
+            img.src = url;
+        } catch (e) {
+            // silent fail; iOS will use fallback meta if present
+        }
+    })();
 });

@@ -791,6 +791,10 @@
     z-index: 1000;
    }
 
+       /* Install button: icon-only on mobile */
+        #install-app-btn .install-label { display: none; }
+        #install-app-btn { padding: 10px; min-width: 40px; justify-content: center; }
+
        /* new */
        header {
            padding: 0 16px;
