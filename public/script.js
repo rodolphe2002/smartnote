@@ -241,6 +241,13 @@ document.addEventListener('DOMContentLoaded', () => {
                     link.sizes = '180x180';
                     link.href = dataUrl;
                     document.head.appendChild(link);
+
+                    // also set precomposed to prevent gloss effects on older iOS
+                    const link2 = document.createElement('link');
+                    link2.rel = 'apple-touch-icon-precomposed';
+                    link2.sizes = '180x180';
+                    link2.href = dataUrl;
+                    document.head.appendChild(link2);
                 } finally {
                     URL.revokeObjectURL(url);
                 }
