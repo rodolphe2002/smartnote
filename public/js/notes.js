@@ -180,7 +180,7 @@ optionsMenu.querySelectorAll('.option').forEach(option => {
       if (note && folderName) {
         note.folder = folderName;
         saveNotesToLocalStorage();
-        alert(`Note déplacée dans "${folderName}"`);
+        window.showToast && window.showToast(`Note déplacée dans "${folderName}"`, "success");
         renderAllNotes();
       }
     }

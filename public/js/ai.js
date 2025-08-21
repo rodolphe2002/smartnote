@@ -199,21 +199,13 @@ btnAi && btnAi.addEventListener("click", async () => {
   const sel = window.getSelection();
 
   if (!sel || sel.isCollapsed || !editor.contains(sel.anchorNode)) {
-    if (window.showToast) {
-      window.showToast("Veuillez sélectionner du texte dans l'éditeur pour utiliser l'IA.", "info");
-    } else {
-      alert("Veuillez sélectionner du texte dans l'éditeur pour utiliser l'IA.");
-    }
+    window.showToast && window.showToast("Veuillez sélectionner du texte dans l'éditeur pour utiliser l'IA.", "info");
     return;
   }
 
   const selectedText = sel.toString().trim();
   if (!selectedText) {
-    if (window.showToast) {
-      window.showToast("La sélection est vide.", "info");
-    } else {
-      alert("La sélection est vide.");
-    }
+    window.showToast && window.showToast("La sélection est vide.", "info");
     return;
   }
 
@@ -243,11 +235,11 @@ btnAi && btnAi.addEventListener("click", async () => {
       setTimeout(() => parentNode.classList.remove("highlight-corrected"), 2000);
       saveEditor();
     } else {
-      alert("Le texte sélectionné est déjà correct ou aucune correction apportée.");
+      window.showToast && window.showToast("Le texte sélectionné est déjà correct ou aucune correction apportée.", "info");
     }
   } catch (error) {
     console.error("Erreur IA lors de la correction de la sélection :", error);
-    alert("Erreur lors de la correction, veuillez réessayer.");
+    window.showToast && window.showToast("Erreur lors de la correction, veuillez réessayer.", "error");
   } finally {
     btnAi.disabled = false;
   }
@@ -275,11 +267,7 @@ document.getElementById("btn-full-correct").addEventListener("click", async () =
     .filter(el => el.innerText && el.innerText.trim() !== '');
 
   if (blocks.length === 0) {
-    if (window.showToast) {
-      window.showToast("Aucun contenu à corriger.", "info");
-    } else {
-      alert("Aucun contenu à corriger.");
-    }
+    window.showToast && window.showToast("Aucun contenu à corriger.", "info");
     return;
   }
 
@@ -404,7 +392,7 @@ toggleSummaryBtn && toggleSummaryBtn.addEventListener("click", async () => {
     const data = await response.json();
 
     if (!data.summary || !Array.isArray(data.tags)) {
-      alert("Erreur IA : Résumé non généré.");
+      window.showToast && window.showToast("Erreur IA : Résumé non généré.", "error");
       return;
     }
 
@@ -423,7 +411,7 @@ toggleSummaryBtn && toggleSummaryBtn.addEventListener("click", async () => {
 
   } catch (err) {
     console.error("Erreur IA résumé :", err);
-    alert("Erreur lors de la génération du résumé.");
+    window.showToast && window.showToast("Erreur lors de la génération du résumé.", "error");
   } finally {
     btn.classList.remove("loading");
   }
